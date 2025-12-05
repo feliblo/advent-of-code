@@ -1,55 +1,46 @@
-use nom::{
-    IResult, Parser,
-    bytes::complete::tag,
-    character::complete::{self, line_ending},
-    combinator::{all_consuming, opt},
-    multi::separated_list1,
-    sequence::{separated_pair, terminated},
-};
-use std::ops::RangeInclusive;
-use tracing::info;
+use miette::{IntoDiagnostic, Result};
 
 #[tracing::instrument]
-pub fn process(input: &str) -> miette::Result<String> {
-    let (_, (ranges, items)) =
-        all_consuming(parse).parse(input).unwrap();
+pub fn process(_input: &str) -> miette::Result<String> {
+    let mut lines = _input.lines();
 
-    let result = items
-        .iter()
-        .filter(|item| {
-            ranges.iter().any(|range| range.contains(item))
-        })
-        .count();
+    let fresh_ingredient_ranges: Result<Vec<(i64, i64)>> = lines
+    .by_ref()
+    .take_while(|l| !l.is_empty())
+    .map(|l| {
+        let (start, end) = l
+            .split_once('-')
+            .ok_or_else(|| miette::miette!("Invalid range, missing '-' in: {}", l))?;
 
-    Ok(result.to_string())
-}
+        Ok((
+            start.trim().parse::<i64>().into_diagnostic()?,
+            end.trim().parse::<i64>().into_diagnostic()?,
+        ))
+    })
+    .collect();
 
-fn parse(
-    input: &str,
-) -> IResult<&str, (Vec<RangeInclusive<u64>>, Vec<u64>)> {
-    terminated(
-        separated_pair(
-            ranges,
-            line_ending.and(line_ending),
-            separated_list1(line_ending, complete::u64),
-        ),
-        opt(line_ending),
-    )
-    .parse(input)
-}
+    if let Ok(ingredient_ranges) = fresh_ingredient_ranges {
+        let ingredients_are_fresh: i64 =
+            lines.fold(0, |acc, l| {
+                let ingredient_number =
+                    l.trim().parse::<i64>().expect(
+                        "failed parsing but shouldn't have",
+                    );
 
-fn ranges(
-    input: &str,
-) -> IResult<&str, Vec<RangeInclusive<u64>>> {
-    separated_list1(line_ending, range).parse(input)
-}
-
-fn range(
-    input: &str,
-) -> IResult<&str, RangeInclusive<u64>> {
-    separated_pair(complete::u64, tag("-"), complete::u64)
-        .map(|(a, b)| a..=b)
-        .parse(input)
+                if ingredient_ranges.iter().any(
+                    |&(start, end)| {
+                        (start..=end)
+                            .contains(&ingredient_number)
+                    },
+                ) {
+                    acc + 1
+                } else {
+                    acc
+                }
+            });
+        return Ok(ingredients_are_fresh.to_string());
+    }
+    Ok("wrong".to_string())
 }
 
 #[cfg(test)]

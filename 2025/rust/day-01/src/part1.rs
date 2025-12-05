@@ -1,9 +1,9 @@
 use nom::{
-    IResult, Parser,
     branch::alt,
     bytes::complete::tag,
     character::complete::{self, line_ending},
     multi::separated_list1,
+    IResult, Parser,
 };
 
 const STARTING_POSITION: i32 = 50;

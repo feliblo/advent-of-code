@@ -1,75 +1,64 @@
-use nom::{
-    IResult, Parser,
-    bytes::complete::tag,
-    character::complete::{self, line_ending},
-    combinator::opt,
-    multi::separated_list1,
-    sequence::{separated_pair, terminated},
-};
-use rangemap::RangeInclusiveSet;
-use std::ops::RangeInclusive;
+use miette::{IntoDiagnostic, Result};
 
-#[tracing::instrument(skip(input))]
-pub fn process(input: &str) -> miette::Result<String> {
-    let (_, ranges) = ranges.parse(input).unwrap();
+#[tracing::instrument]
+pub fn process(_input: &str) -> Result<String> {
+    let mut ingredient_ranges: Vec<(i64, i64)> = _input
+        .lines()
+        .take_while(|l| !l.is_empty())
+        .map(|line| {
+            let (s, e) =
+                line.split_once('-').ok_or_else(|| {
+                    miette::miette!(
+                        "Invalid range: {}",
+                        line
+                    )
+                })?;
+            Ok((
+                s.trim()
+                    .parse::<i64>()
+                    .into_diagnostic()?,
+                e.trim()
+                    .parse::<i64>()
+                    .into_diagnostic()?,
+            ))
+        })
+        .collect::<Result<_>>()?;
 
-    let mut range_set = RangeInclusiveSet::new();
-    for range in ranges {
-        range_set.insert(range);
+    ingredient_ranges.sort_by_key(|&(start, _)| start);
+
+    let mut extended_intervals: Vec<(i64, i64)> =
+        Vec::new();
+    for (start, end) in ingredient_ranges {
+        if let Some((_, last_end)) =
+            extended_intervals.last_mut()
+        {
+            if start <= *last_end + 1 {
+                *last_end = (*last_end).max(end);
+            } else {
+                extended_intervals.push((start, end));
+            }
+        } else {
+            extended_intervals.push((start, end));
+        }
     }
-    let result = range_set
+
+    let total: i64 = extended_intervals
         .iter()
-        .map(|range| range.end() + 1 - range.start())
-        .sum::<u64>();
-
-    Ok(result.to_string())
-}
-
-fn parse(
-    input: &str,
-) -> IResult<&str, (Vec<RangeInclusive<u64>>, Vec<u64>)> {
-    terminated(
-        separated_pair(
-            ranges,
-            line_ending.and(line_ending),
-            separated_list1(line_ending, complete::u64),
-        ),
-        opt(line_ending),
-    )
-    .parse(input)
-}
-
-fn ranges(
-    input: &str,
-) -> IResult<&str, Vec<RangeInclusive<u64>>> {
-    separated_list1(line_ending, range).parse(input)
-}
-
-fn range(
-    input: &str,
-) -> IResult<&str, RangeInclusive<u64>> {
-    separated_pair(complete::u64, tag("-"), complete::u64)
-        .map(|(a, b)| a..=b)
-        .parse(input)
+        .map(|(s, e)| e - s + 1)
+        .sum();
+    Ok(total.to_string())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test_log::test]
+    #[test]
     fn test_process() -> miette::Result<()> {
         let input = "3-5
 10-14
 16-20
-12-18
-
-1
-5
-8
-11
-17
-32";
+12-18";
         assert_eq!("14", process(input)?);
         Ok(())
     }

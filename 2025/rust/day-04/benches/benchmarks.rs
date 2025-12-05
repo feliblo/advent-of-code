@@ -28,7 +28,7 @@ fn part2() {
     .unwrap();
 }
 
-#[divan::bench]
+#[divan::bench]t
 fn part2_rustc_hash() {
     part2_rustc_hash::process(divan::black_box(
         include_str!("../input2.txt",),
