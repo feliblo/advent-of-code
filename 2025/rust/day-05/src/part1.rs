@@ -47,7 +47,7 @@ pub fn process(_input: &str) -> miette::Result<String> {
 mod tests {
     use super::*;
 
-    #[test_log::test]
+    #[test]
     fn test_process() -> miette::Result<()> {
         let input = "3-5
 10-14

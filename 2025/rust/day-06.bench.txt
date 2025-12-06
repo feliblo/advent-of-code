@@ -1,0 +1,18 @@
+day_06_bench  fastest       │ slowest       │ median        │ mean          │ samples │ iters
+╰─ part2      1.952 ms      │ 2.112 ms      │ 1.97 ms       │ 1.975 ms      │ 100     │ 100
+
+day_06_bench  fastest       │ slowest       │ median        │ mean          │ samples │ iters
+╰─ part2      1.815 ms      │ 2.06 ms       │ 1.923 ms      │ 1.919 ms      │ 100     │ 100
+
+day_06_bench  fastest       │ slowest       │ median        │ mean          │ samples │ iters
+╰─ part2      1.772 ms      │ 2.342 ms      │ 1.901 ms      │ 1.901 ms      │ 100     │ 100
+
+day_06_bench  fastest       │ slowest       │ median        │ mean          │ samples │ iters
+╰─ part2      1.777 ms      │ 2.218 ms      │ 1.895 ms      │ 1.894 ms      │ 100     │ 100
+
+day_06_bench  fastest       │ slowest       │ median        │ mean          │ samples │ iters
+╰─ part2      1.792 ms      │ 2.022 ms      │ 1.912 ms      │ 1.909 ms      │ 100     │ 100
+
+day_06_bench  fastest       │ slowest       │ median        │ mean          │ samples │ iters
+╰─ part2      1.79 ms       │ 2.238 ms      │ 1.9 ms        │ 1.9 ms        │ 100     │ 100
+
