@@ -1,90 +1,79 @@
-use std::ops::{Add, Mul};
-
-enum Operator {
-    Add,
-    Multiply,
+use std::{
+    ops::{Add, Mul},
+    thread::current,
+};
+use tracing::info;
+enum Operators {
+    Plus,
+    Times,
 }
 
-impl Operator {
-    fn from_char(c: char) -> Self {
-        match c {
-            '*' => Self::Multiply,
-            '+' => Self::Add,
-            _ => panic!("Invalid operator: {}", c),
+fn sum_vec(xs: Vec<i64>) -> i64 {
+    xs.into_iter().reduce(Add::add).unwrap()
+}
+
+fn product_vec(xs: Vec<i64>) -> i64 {
+    xs.into_iter().reduce(Mul::mul).unwrap()
+}
+
+impl Operators {
+    fn from_string(op: &str) -> Self {
+        match op {
+            "*" => Self::Times,
+            "+" => Self::Plus,
+            _ => panic!("Does another operator exist?"),
         }
     }
 
-    fn apply(&self, values: Vec<i64>) -> i64 {
+    fn to_operator(self) -> fn(Vec<i64>) -> i64 {
         match self {
-            Self::Add => {
-                values.into_iter().reduce(Add::add).unwrap()
-            }
-            Self::Multiply => {
-                values.into_iter().reduce(Mul::mul).unwrap()
-            }
+            Self::Plus => sum_vec,
+            Self::Times => product_vec,
         }
     }
 }
 
 #[tracing::instrument]
-pub fn process(input: &str) -> miette::Result<String> {
-    let lines: Vec<&[u8]> =
-        input.lines().map(str::as_bytes).collect();
-    let operators = lines.last().unwrap();
-    let grid = &lines[..lines.len() - 1];
-    let width =
-        lines.iter().map(|l| l.len()).max().unwrap();
+pub fn process(_input: &str) -> miette::Result<String> {
+    let mut rows: Vec<Vec<&str>> = _input
+        .lines()
+        .map(|l| l.split_whitespace().collect())
+        .collect();
 
-    let mut total = 0;
-    let mut col = 0;
+    let operators: Vec<fn(Vec<i64>) -> i64> = rows
+        .pop()
+        .unwrap()
+        .into_iter()
+        .map(|a| Operators::from_string(a).to_operator())
+        .collect();
 
-    while col < width {
-        if is_empty_column(grid, col) {
-            col += 1;
-            continue;
-        }
+    let column_len = rows[0].len();
+    let mut iterator: Vec<_> =
+        rows.into_iter().map(|n| n.into_iter()).collect();
+    let columns = (0..column_len)
+        .map(|_| {
+            iterator
+                .iter_mut()
+                .map(|n| {
+                    let current_n: i64 = n
+                        .next()
+                        .unwrap()
+                        .parse()
+                        .expect("Should be parsable");
+                    println!("{}", current_n);
+                    current_n
+                })
+                .collect::<Vec<i64>>()
+        })
+        .collect::<Vec<Vec<i64>>>();
 
-        let start = col;
-        let mut end = col;
-        while end < width && !is_empty_column(grid, end) {
-            end += 1;
-        }
-
-        let mut values = Vec::new();
-        for c in (start..end).rev() {
-            let mut digits = Vec::new();
-            for &row in grid.iter() {
-                if c < row.len() && row[c] != b' ' {
-                    digits.push(row[c]);
-                }
-            }
-
-            if !digits.is_empty() {
-                let mut value: i64 = 0;
-                for &digit in &digits {
-                    value =
-                        value * 10 + (digit - b'0') as i64;
-                }
-                values.push(value);
-            }
-        }
-
-        let op = if start < operators.len() {
-            Operator::from_char(operators[start] as char)
-        } else {
-            Operator::Add
-        };
-
-        total += op.apply(values);
-        col = end;
+    let mut final_result = 0;
+    for (i, column) in columns.iter().enumerate() {
+        let op = operators[i];
+        let result = op(column.clone());
+        final_result += result
     }
-
-    Ok(total.to_string())
-}
-
-fn is_empty_column(grid: &[&[u8]], col: usize) -> bool {
-    grid.iter()
-        .all(|row| col >= row.len() || row[col] == b' ')
+    Ok(final_result.to_string())
 }
 
 #[cfg(test)]
@@ -93,11 +82,11 @@ mod tests {
 
     #[test_log::test]
     fn test_process() -> miette::Result<()> {
-        let input = "123 328  51 64
- 45 64  387 23
-  6 98  215 314
+        let input = "123 328  51 64 
+45 64  387 23 
+6 98  215 314
 *   +   *   + ";
-        assert_eq!("3263827", process(input)?);
+        assert_eq!("4277556", process(input)?);
         Ok(())
     }
 }
