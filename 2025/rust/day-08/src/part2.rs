@@ -205,26 +205,23 @@ pub fn process(input: &str) -> miette::Result<String> {
     }
 
     // Connections made
-    for &(i, j, _) in all_pairs.iter() {
+    let mut last_pair = None;
+    for &(i, j, _) in &all_pairs {
         let jb1 = &objects[i];
         let jb2 = &objects[j];
-        uf.union(jb1, jb2);
-    }
-
-    // Count sizes of all circuits
-    let mut sizes: Vec<usize> = vec![0; objects.len()];
-    for (_idx, jb) in objects.iter().enumerate() {
-        if let Some(root) = uf.find(jb) {
-            sizes[root] += 1;
+        if uf.union(jb1, jb2) == Some(true) {
+            last_pair = Some((jb1, jb2));
+            if uf.count() == 1 {
+                break;
+            }
         }
     }
 
-    // Take the three largest sizes and multiply them
-    sizes.sort_unstable_by(|a, b| b.cmp(a));
-    let product_of_three_largest: usize =
-        sizes.iter().take(3).product();
-
-    Ok(product_of_three_largest.to_string())
+    if let Some((jb1, jb2)) = last_pair {
+        let result = (jb1.x as usize) * (jb2.x as usize);
+        return Ok(result.to_string());
+    }
+    Ok("I failed".to_string())
 }
 
 #[cfg(test)]
@@ -253,7 +250,7 @@ mod tests {
 862,61,35
 984,92,344
 425,690,689";
-        assert_eq!("40", process(input)?);
+        assert_eq!("25272", process(input)?);
         Ok(())
     }
 }
