@@ -14,17 +14,22 @@ pub fn process(input: &str) -> miette::Result<String> {
         .position(|c| c == ENTRY_POINT)
         .expect("no S in first line");
 
-    // Map from column position to count of timelines at that position
-    let mut timeline_counts: HashMap<usize, usize> = HashMap::new();
+    let mut timeline_counts: HashMap<usize, usize> =
+        HashMap::new();
     timeline_counts.insert(start, 1);
 
     for row in &lines[1..] {
-        let mut next_counts: HashMap<usize, usize> = HashMap::new();
+        let mut next_counts: HashMap<usize, usize> =
+            HashMap::new();
 
+        // Keep track of complete runs
         for (&col, &count) in &timeline_counts {
-            let children = next_beams_for_cell(col, row, width);
+            let children =
+                next_beams_for_cell(col, row, width);
             for child_col in children {
-                *next_counts.entry(child_col).or_insert(0) += count;
+                *next_counts
+                    .entry(child_col)
+                    .or_insert(0) += count;
             }
         }
 
@@ -44,14 +49,12 @@ fn next_beams_for_cell(
 
     if cell == SPLITTER {
         let mut children = Vec::new();
-        // Left path
         if col > 0 {
             let left_col = col - 1;
             if left_col < width {
                 children.push(left_col);
             }
         }
-        // Right path
         if col + 1 < width {
             children.push(col + 1);
         }
