@@ -1,5 +1,3 @@
-use core::panic;
-
 use itertools::Itertools;
 
 #[tracing::instrument]
